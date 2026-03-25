@@ -1,30 +1,40 @@
 
-let pocetDni = 0
+
+
+
 // kalendář
+const selectMesic = document.getElementById('selectMěsíc');
+const selectRok = document.getElementById('selectRok');
+let pocetDni = 0
 const dnyVTydnu = ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"]
+
+//vyplní roletku pro roky
+  for (let r = 2020; r <= 2030; r++) {
+  const opt = document.createElement('option');
+  opt.value = r;
+  opt.textContent = r;
+  selectRok.appendChild(opt);
+}
+//funkce k vykreslení kalendáře
 function renderKalendar(rok, mesic) {
-  const rokVTabulce = document.getElementById('Rok');
-  const měsícVTabulce = document.getElementById('Měsíc')
-  const denVTabulce = document.getElementById('Den')
-  const dnyVTydnuTabulce = document.getElementById('DenVTýdnu')
-  rokVTabulce.innerHTML = ''; //vyčistí předchozí obsah
+
+//čistka
+  document.getElementById('Den').innerHTML = '';
+  document.getElementById('DenVTýdnu').innerHTML = '';
+
+
+  const denVTabulce = document.getElementById('Den');
+  const dnyVTydnuTabulce = document.getElementById('DenVTýdnu');
 
   //zjistí počet dní v měsíci(0. den následujícího měsíce je poslední den aktuálního)
   pocetDni = new Date(rok, mesic, 0).getDate();
 
-  //vytvoří buňku pro rok
-  const sloupceRok = document.createElement('td');
-  sloupceRok.textContent = rok;
-  sloupceRok.colSpan = pocetDni; 
-  
-  rokVTabulce.appendChild(sloupceRok);
+  //roztáhne buňku pro rok
+  document.getElementById('rokSpan').colSpan = pocetDni; 
 
-  //vytvoří buňku pro měsíc
-  const sloupceMěsíc = document.createElement('td');
-  sloupceMěsíc.textContent = mesic;
-  sloupceMěsíc.colSpan = pocetDni;
+  //roztáhne buňku pro měsíc
+  document.getElementById('měsícSpan').colSpan = pocetDni;
 
-  měsícVTabulce.appendChild(sloupceMěsíc)
 
   //vytvoří buňky pro dny
   for (let i = 1;i<=pocetDni;i++){
@@ -40,6 +50,17 @@ function renderKalendar(rok, mesic) {
   dnyVTydnuTabulce.appendChild(sloupceDnyVTydnu)
 }
 }
+//funkce k znovunačtení tabulky podle výběru v roletkách
+function aktualizuj() {
+  const vybranyMesic = parseInt(selectMěsíc.value); 
+  const vybranyRok = parseInt(selectRok.value);
+
+  renderKalendar(vybranyRok, vybranyMesic);
+}
+
+//spouštěče při změnách v roletkách roku a měsíců
+selectMěsíc.addEventListener('change', aktualizuj);
+selectRok.addEventListener('change', aktualizuj);
 
 //přídá řádky do tabulky
 document.getElementById('přidavač').addEventListener('click', function() {
