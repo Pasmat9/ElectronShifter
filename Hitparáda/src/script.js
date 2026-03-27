@@ -37,42 +37,45 @@ function renderKalendar(rok, mesic) {
 
 
   //vytvoří buňky pro dny
-  for (let i = -2;i<=pocetDni;i++){
+  for (let i = -2;i<=pocetDni+2;i++){
   const sloupceDen = document.createElement('td');
   if (i<1) {sloupceDen.textContent = ''} else {sloupceDen.textContent = i};
+  if (i>pocetDni) {sloupceDen.textContent = ''}
   denVTabulce.appendChild(sloupceDen);
 }
   //vytvoří buňky pro názvy dnů
-  for (let j = -2;j<=pocetDni;j++){
+  for (let j = -2;j<=pocetDni+2;j++){
   const sloupceDnyVTydnu = document.createElement('td');
   let denVTydnu = new Date(rok, mesic-1, j).getDay();
   if (j<1) {sloupceDnyVTydnu.textContent = ''} else {sloupceDnyVTydnu.textContent = dnyVTydnu[denVTydnu]};
+  if (j>pocetDni) {sloupceDnyVTydnu.textContent = ''};
   dnyVTydnuTabulce.appendChild(sloupceDnyVTydnu);
 
-  const celkovaSirka = pocetDni + 3; // +1 kvůli sloupci "Jména"
+  const celkovaSirka = 3 + pocetDni + 2; // +1 kvůli sloupci "Jména"
   synchronizujRadky(celkovaSirka);
 }
 }
+
+
 //funkce k znovunačtení tabulky podle výběru v roletkách
 function aktualizuj() {
   const vybranyMesic = parseInt(selectMěsíc.value); 
   const vybranyRok = parseInt(selectRok.value);
-
   renderKalendar(vybranyRok, vybranyMesic);
 }
-
 //spouštěče při změnách v roletkách roku a měsíců
 selectMěsíc.addEventListener('change', aktualizuj);
 selectRok.addEventListener('change', aktualizuj);
+
 
 //přídá řádky do tabulky
 function přidáníŘádku(){
   const table = document.querySelector('table');
   const newRow = document.createElement('tr');
   const rows = table.querySelectorAll('tr');
-  const rowIndex = rows.length;
+  const rowIndex = rows.length-4;
 
-  for (let i = 0; i < pocetDni+3; i++) {
+  for (let i = 0; i < pocetDni+5; i++) {
     const td = document.createElement('td');
     td.setAttribute('contenteditable', 'true');
     td.setAttribute('data-col', i);
@@ -84,26 +87,28 @@ function přidáníŘádku(){
 document.getElementById('přidavač').addEventListener('click', přidáníŘádku);
 
 
+//funkce pro synchronizaci počtu sloupců při změně v roletkách
 function synchronizujRadky(novyPocetSloupcu) {
-  const table = document.querySelector('table');
-  const datoveRadky = table.querySelectorAll('tr:not(#Rok):not(#Měsíc):not(#Den):not(#DenVTýdnu)');
+  const datoveRadky = document.querySelectorAll('table tr:not(#Rok):not(#Měsíc):not(#Den):not(#DenVTýdnu)');
 
-  datoveRadky.forEach(row => {
-    let aktualniPocetBunek = row.children.length;
-
-    // A) Je jich málo? Přidáme chybějící
-    while (aktualniPocetBunek < novyPocetSloupcu) {
+  datoveRadky.forEach((row, rowIndex) => {
+    // když sloupců přibyde
+    while (row.children.length < novyPocetSloupcu) {
       const td = document.createElement('td');
       td.setAttribute('contenteditable', 'true');
       row.appendChild(td);
-      aktualniPocetBunek++;
+    }
+    // když sloupců ubyde
+    while (row.children.length > novyPocetSloupcu) {
+      row.removeChild(row.lastChild);
     }
 
-    // B) Je jich moc? Odebereme přebývající (třeba při přechodu z března na únor)
-    while (aktualniPocetBunek > novyPocetSloupcu) {
-      row.removeChild(row.lastChild);
-      aktualniPocetBunek--;
-    }
+    // přečíslování data-col a data-row kvůli novým sloupcům
+    Array.from(row.children).forEach((td, colIndex) => {
+      td.setAttribute('data-col', colIndex); // Index sloupce (0, 1, 2... až 31)
+      td.setAttribute('data-row', rowIndex); // Index řádku (0, 1, 2...)
+      if (colIndex>2) {td.innerHTML = ''};
+    });
   });
 }
 
