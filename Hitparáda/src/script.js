@@ -112,6 +112,53 @@ function synchronizujRadky(novyPocetSloupcu) {
   });
 }
 
+
+const potrebaSmen = {
+  denni: 3, // Počet lidí na ranní
+  nocni: 2  // Počet lidí na noční
+};
+
+//funkce pro generování směn v celém měsíci
+function generujSmeny() {
+  const radky = document.querySelectorAll('table tr:not(#Rok):not(#Měsíc):not(#Den):not(#DenVTýdnu)');
+  //cyklus která prochází měsíc po jednotlivých dnech
+  for (let den = 3; den <= pocetDni+2; den++) {
+    const colIndex = den;
+    
+    //zkontroluje všechny jestli den předtím nebyli v práci
+    radky.forEach(row => {
+      const td = row.children[colIndex];
+      const vcerejsiSmena = den > 1 ? row.children[colIndex - 1].textContent : "";
+      
+      if (vcerejsiSmena === "N") {
+        td.textContent = "poN";
+        td.style.backgroundColor = "#f5f5f5";
+        return;
+      }
+    })
+
+      //vytvoří array lidí pro výběr na směnu z lidí co nemají požadavek/nemají už směnu
+      const dostupniLide = Array.from(radky).filter(row => {
+      const td = row.children[colIndex];
+      return td.textContent !== "D" && td.textContent !== "V" && td.textContent !== "N" && td.textContent !== "R" && td.textContent !== "poN"; // D = Dovolená, P = Paragraf
+      });
+      //náhodně je zamíchá
+      dostupniLide.sort(() => Math.random() - 0.5);
+
+      //bere lidi ze zamíchaných dostupných lidí a přiřazuje směny
+      for (let i = 0; i < potrebaSmen.nocni && i < dostupniLide.length; i++) {
+      const tdSmeny = dostupniLide[i].children[colIndex]; 
+      tdSmeny.textContent = "N";
+      tdSmeny.style.backgroundColor = "#c5cae9";
+      }
+      for (let j = potrebaSmen.nocni; j < potrebaSmen.denni+potrebaSmen.nocni && j < dostupniLide.length; j++) {
+      const tdSmeny = dostupniLide[j].children[colIndex]; 
+      tdSmeny.textContent = "D";
+      tdSmeny.style.backgroundColor = "#c5cae9";
+      }
+  }
+    };
+
 // odebere řádky z tabulky
 document.getElementById('ubírač').addEventListener('click', function() {
   const table = document.querySelector('table');
@@ -119,10 +166,8 @@ document.getElementById('ubírač').addEventListener('click', function() {
   if (rows.length > 1) {
     table.removeChild(rows[rows.length - 1]);
   };})
-
+document.getElementById('generatorSmen').addEventListener('click', generujSmeny)
 //zajistí aby prvotní render byl na dnešní rok/měsíc
 selectMesic.value = new Date().getMonth()+1
 selectRok.value = new Date().getFullYear()
 renderKalendar(new Date().getFullYear(),new Date().getMonth()+1)
-
-//musíš spočítat kolik tam je řádků přidaných předtím než měníš měsíc, pak je smazat a pak je znovu vygenerovat. myslím
