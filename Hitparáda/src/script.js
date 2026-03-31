@@ -118,6 +118,17 @@ const potrebaSmen = {
   nocni: 2  // Počet lidí na noční
 };
 
+//funkce co spočte kolik hodin aktuálně člověk v měsíci má
+function spoctiHodiny(row) {
+      let hodiny = 0;
+      hodiny += parseFloat(row.children[2].textContent) || 0;
+      Array.from(row.children).forEach(td => {
+        if (td.textContent === "D") hodiny += 12;
+        if (td.textContent === "N") hodiny += 12;
+  });
+      return hodiny;
+}
+
 //funkce pro generování směn v celém měsíci
 function generujSmeny() {
   const radky = document.querySelectorAll('table tr:not(#Rok):not(#Měsíc):not(#Den):not(#DenVTýdnu)');
@@ -138,12 +149,32 @@ function generujSmeny() {
     })
 
       //vytvoří array lidí pro výběr na směnu z lidí co nemají požadavek/nemají už směnu
-      const dostupniLide = Array.from(radky).filter(row => {
+    const dostupniLide = Array.from(radky).filter(row => {
       const td = row.children[colIndex];
       return td.textContent !== "D" && td.textContent !== "V" && td.textContent !== "N" && td.textContent !== "R" && td.textContent !== "poN"; // D = Dovolená, P = Paragraf
-      });
+    });
+
+    dostupniLide.sort((a, b) => {
+      const uvazekA = parseFloat(a.children[0].textContent)*160 || 160;
+      const uvazekB = parseFloat(b.children[0].textContent)*160 || 160;
+  
+  // 1. Spočítáme procento naplnění (např. 0.25)
+      const pomerA = spoctiHodiny(a) / uvazekA;
+      const pomerB = spoctiHodiny(b) / uvazekB;
+
+  // 2. Zaokrouhlíme na 10 % (vytvoříme "hladiny")
+  // Díky tomu lidé s 21 % a 25 % budou v jedné skupině
+      const hladinaA = Math.floor(pomerA * 10);
+      const hladinaB = Math.floor(pomerB * 10);
+
+      if (hladinaA !== hladinaB) {
+        return hladinaA - hladinaB; // Ti s prázdnějším úvazkem mají přednost
+      }
+
+  // 3. Pokud jsou ve stejné hladině, rozhodne NÁHODA
+      return Math.random() - 0.5;
+    });
       //náhodně je zamíchá
-      dostupniLide.sort(() => Math.random() - 0.5);
 
       //bere lidi ze zamíchaných dostupných lidí a přiřazuje směny
       for (let i = 0; i < potrebaSmen.nocni && i < dostupniLide.length; i++) {
@@ -154,10 +185,14 @@ function generujSmeny() {
       for (let j = potrebaSmen.nocni; j < potrebaSmen.denni+potrebaSmen.nocni && j < dostupniLide.length; j++) {
       const tdSmeny = dostupniLide[j].children[colIndex]; 
       tdSmeny.textContent = "D";
-      tdSmeny.style.backgroundColor = "#c5cae9";
+      tdSmeny.style.backgroundColor = "#ebbbc3";
       }
+
   }
-    };
+  radky.forEach(row=>{
+    row.children[pocetDni+3].textContent = spoctiHodiny(row)
+  })
+};
 
 // odebere řádky z tabulky
 document.getElementById('ubírač').addEventListener('click', function() {
