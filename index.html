@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'" />
+  <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'" />
+  <title>Hello from Electron renderer!</title>
+  <link rel="stylesheet" href="src/styles.css">
+</head>
+
+<body>
+  <button id="add-row-button">Přidat řádek</button>
+  <button id="generate-shifts-button">Generuj směny</button>
+  <table id="calendar-table">
+    <thead>
+      <tr id="year-row">
+        <td></td>
+        <td></td>
+        <td></td>
+        <td id="year-span">
+          <select id="select-year">
+          </select>
+        </td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr id="month-row">
+        <td>Úvazek</td>
+        <td>Jméno</td>
+        <td>Převod H</td>
+        <td id="month-span">
+          <select id="select-month">
+            <option value="1">Leden</option>
+            <option value="2">Únor</option>
+            <option value="3">Březen</option>
+            <option value="4">Duben</option>
+            <option value="5">Květen</option>
+            <option value="6">Červen</option>
+            <option value="7">Červenec</option>
+            <option value="8">Srpen</option>
+            <option value="9">Září</option>
+            <option value="10">Říjen</option>
+            <option value="11">Listopad</option>
+            <option value="12">Prosinec</option>
+          </select>
+        </td>
+        <td>Hodiny tuten měsíc</td>
+        <td>Převod H</td>
+      </tr>
+      <tr id="day-row"></tr>
+      <tr id="day-of-week-row"></tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+  <button id="remove-row-button">Odebrat řádek</button>
+  <script src="src/script.js"></script>
+</body>
+
+</html>

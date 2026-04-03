@@ -1,0 +1,42 @@
+table {
+  border: 1px solid #000;
+  border-collapse: collapse;
+}
+
+table td {
+  border: 1px solid #888;
+  min-width: 30px;
+  min-height: 20px;
+  padding: 6px 10px;
+}
+
+table td[contenteditable="true"] {
+  font-size: 16px;
+}
+
+.head-row {
+  min-width: 30px;
+  min-height: 30px;
+  padding: 6px 10px;
+  font-size: 16px;
+  border: 1px solid #888;
+}
+
+.year-select, .month-select {
+  padding: 5px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.shift-post-night {
+  background-color: #f5f5f5;
+}
+
+.shift-night {
+  background-color: #c5cae9;
+}
+
+.shift-day {
+  background-color: #ebbbc3;
+}
