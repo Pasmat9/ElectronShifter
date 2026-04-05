@@ -1,91 +1,100 @@
 
-
-
-
 // kalendář
 const selectMesic = document.getElementById('selectMěsíc');
 const selectRok = document.getElementById('selectRok');
-let pocetDni = 0
-const dnyVTydnu = ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"]
+let pocetDniVMesici = 0;
+const indexSloupceZacatkuKalendare=3;
+const indexSloupcuKonceKalendare=2;
+const indexRadkuHlavicky=4;
+const dnyVTydnu = ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"];
+const potrebaSmen = {
+  denni: 3, // Počet lidí na ranní
+  nocni: 2  // Počet lidí na noční
+};
 
 //vyplní roletku pro roky
-for (let r = 2020; r <= 2030; r++) {
-const opt = document.createElement('option');
-opt.value = r;
-opt.textContent = r;
-selectRok.appendChild(opt);
+for (let rok = 2022; rok <= new Date().getFullYear()+2; rok++) {
+  const opt = document.createElement('option');
+  opt.value = rok;
+  opt.textContent = rok;
+  selectRok.appendChild(opt);
 }
-//funkce k vykreslení kalendáře
-function renderKalendar(rok, mesic) {
 
-//čistka
+selectMesic.value = new Date().getMonth()+1
+selectRok.value = new Date().getFullYear()
+
+//při změně v roletce měsícu a let upraví počet buněk dle data
+selectMesic.addEventListener('change', aktualizujKalendar);
+selectRok.addEventListener('change', aktualizujKalendar);
+document.getElementById('přidavač').addEventListener('click', pridaniRadku); //tlačitko pro přidání řádku
+document.getElementById('ubírač').addEventListener('click', odeberRadky)
+document.getElementById('generatorSmen').addEventListener('click', generujSmeny); //tlačítko pro generování směn
+
+/**funkce k vykreslení hlavičky kalendáře (první 4 řádky)
+ * @param {number} rok
+ * @param {number} mesic
+ */
+function renderKalendar(rok, mesic) {
   document.getElementById('Den').innerHTML = '';
   document.getElementById('DenVTýdnu').innerHTML = '';
 
-
   const denVTabulce = document.getElementById('Den');
   const dnyVTydnuTabulce = document.getElementById('DenVTýdnu');
+  pocetDniVMesici = new Date(rok, mesic, 0).getDate();
 
-  //zjistí počet dní v měsíci(0. den následujícího měsíce je poslední den aktuálního)
-  pocetDni = new Date(rok, mesic, 0).getDate();
+  document.getElementById('rokSpan').colSpan = pocetDniVMesici; 
+  document.getElementById('měsícSpan').colSpan = pocetDniVMesici;
 
-  //roztáhne buňku pro rok
-  document.getElementById('rokSpan').colSpan = pocetDni; 
+  for (let prazdneBunkyPredKalendarem = 0; prazdneBunkyPredKalendarem< indexSloupceZacatkuKalendare; prazdneBunkyPredKalendarem++){
+    denVTabulce.appendChild(document.createElement('td'));
+    dnyVTydnuTabulce.appendChild(document.createElement('td'));
+  }
 
-  //roztáhne buňku pro měsíc
-  document.getElementById('měsícSpan').colSpan = pocetDni;
+  for (let cislaKalendarnichDnu = 1;cislaKalendarnichDnu<=pocetDniVMesici; cislaKalendarnichDnu++){
+    const sloupecDen = document.createElement('td');
+    sloupecDen.textContent = cislaKalendarnichDnu;
+    denVTabulce.appendChild(sloupecDen);
+  }
 
+  for (let nazevDneVtydnu = 1; nazevDneVtydnu <= pocetDniVMesici; nazevDneVtydnu++){
+    const sloupceDnyVTydnu = document.createElement('td');
+    let denVTydnu = new Date(rok, mesic-1, nazevDneVtydnu).getDay();
+    sloupceDnyVTydnu.textContent = dnyVTydnu[denVTydnu];
+    dnyVTydnuTabulce.appendChild(sloupceDnyVTydnu);
 
-  //vytvoří buňky pro dny
-  for (let i = -2;i<=pocetDni+2;i++){
-  const sloupceDen = document.createElement('td');
-  if (i<1) {sloupceDen.textContent = ''} else {sloupceDen.textContent = i};
-  if (i>pocetDni) {sloupceDen.textContent = ''}
-  denVTabulce.appendChild(sloupceDen);
+    const celkovaSirka = indexSloupceZacatkuKalendare + pocetDniVMesici + indexSloupcuKonceKalendare;
+    synchronizujRadky(celkovaSirka);
+  }
+
+  for (let prazdneBunkyZaKalendarem = 0; prazdneBunkyZaKalendarem<indexSloupcuKonceKalendare; prazdneBunkyZaKalendarem++){
+    denVTabulce.appendChild(document.createElement('td'));
+    dnyVTydnuTabulce.appendChild(document.createElement('td'));
+  }
 }
-  //vytvoří buňky pro názvy dnů
-  for (let j = -2;j<=pocetDni+2;j++){
-  const sloupceDnyVTydnu = document.createElement('td');
-  let denVTydnu = new Date(rok, mesic-1, j).getDay();
-  if (j<1) {sloupceDnyVTydnu.textContent = ''} else {sloupceDnyVTydnu.textContent = dnyVTydnu[denVTydnu]};
-  if (j>pocetDni) {sloupceDnyVTydnu.textContent = ''};
-  dnyVTydnuTabulce.appendChild(sloupceDnyVTydnu);
-
-  const celkovaSirka = 3 + pocetDni + 2; // +1 kvůli sloupci "Jména"
-  synchronizujRadky(celkovaSirka);
-}
-}
-
 
 //funkce k znovunačtení tabulky podle výběru v roletkách
-function aktualizuj() {
-  const vybranyMesic = parseInt(selectMěsíc.value); 
+function aktualizujKalendar() {
+  const vybranyMesic = parseInt(selectMesic.value); 
   const vybranyRok = parseInt(selectRok.value);
   renderKalendar(vybranyRok, vybranyMesic);
 }
-//spouštěče při změnách v roletkách roku a měsíců
-selectMěsíc.addEventListener('change', aktualizuj);
-selectRok.addEventListener('change', aktualizuj);
-
 
 //přídá řádky do tabulky
-function přidáníŘádku(){
-  const table = document.querySelector('table');
+function pridaniRadku(){
+  const table = document.querySelector('tbody');
   const newRow = document.createElement('tr');
   const rows = table.querySelectorAll('tr');
-  const rowIndex = rows.length-4;
-
-  for (let i = 0; i < pocetDni+5; i++) {
+  const rowIndex = rows.length-indexRadkuHlavicky;
+  const extraSloupce= indexSloupceZacatkuKalendare + indexSloupcuKonceKalendare;
+  for (let sloupec = 0; sloupec < pocetDniVMesici + extraSloupce; sloupec++) {
     const td = document.createElement('td');
     td.setAttribute('contenteditable', 'true');
-    td.setAttribute('data-col', i);
+    td.setAttribute('data-col', sloupec);
     td.setAttribute('data-row', rowIndex);
     newRow.appendChild(td);
   }
   table.appendChild(newRow);
 };
-document.getElementById('přidavač').addEventListener('click', přidáníŘádku);
-
 
 //funkce pro synchronizaci počtu sloupců při změně v roletkách
 function synchronizujRadky(novyPocetSloupcu) {
@@ -112,12 +121,6 @@ function synchronizujRadky(novyPocetSloupcu) {
   });
 }
 
-
-const potrebaSmen = {
-  denni: 3, // Počet lidí na ranní
-  nocni: 2  // Počet lidí na noční
-};
-
 //funkce co spočte kolik hodin aktuálně člověk v měsíci má
 function spoctiHodiny(row) {
       let hodiny = 0;
@@ -133,7 +136,7 @@ function spoctiHodiny(row) {
 function generujSmeny() {
   const radky = document.querySelectorAll('table tr:not(#Rok):not(#Měsíc):not(#Den):not(#DenVTýdnu)');
   //cyklus která prochází měsíc po jednotlivých dnech
-  for (let den = 3; den <= pocetDni+2; den++) {
+  for (let den = 3; den <= pocetDniVMesici+2; den++) {
     const colIndex = den;
     
     //zkontroluje všechny jestli den předtím nebyli v práci
@@ -144,7 +147,7 @@ function generujSmeny() {
       if (vcerejsiSmena === "N") {
         td.textContent = "poN";
         td.style.backgroundColor = "#f5f5f5";
-        return;
+        
       }
     })
 
@@ -171,10 +174,9 @@ function generujSmeny() {
         return hladinaA - hladinaB; // Ti s prázdnějším úvazkem mají přednost
       }
 
-  // 3. Pokud jsou ve stejné hladině, rozhodne NÁHODA
+  // míchač
       return Math.random() - 0.5;
     });
-      //náhodně je zamíchá
 
       //bere lidi ze zamíchaných dostupných lidí a přiřazuje směny
       for (let i = 0; i < potrebaSmen.nocni && i < dostupniLide.length; i++) {
@@ -190,19 +192,17 @@ function generujSmeny() {
 
   }
   radky.forEach(row=>{
-    row.children[pocetDni+3].textContent = spoctiHodiny(row)
+    row.children[pocetDniVMesici+3].textContent = spoctiHodiny(row)
   })
 };
 
 // odebere řádky z tabulky
-document.getElementById('ubírač').addEventListener('click', function() {
+function odeberRadky(){
   const table = document.querySelector('table');
   const rows = table.querySelectorAll('tr');
   if (rows.length > 1) {
     table.removeChild(rows[rows.length - 1]);
-  };})
-document.getElementById('generatorSmen').addEventListener('click', generujSmeny)
-//zajistí aby prvotní render byl na dnešní rok/měsíc
-selectMesic.value = new Date().getMonth()+1
-selectRok.value = new Date().getFullYear()
+  };
+}
+
 renderKalendar(new Date().getFullYear(),new Date().getMonth()+1)
