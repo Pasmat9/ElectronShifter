@@ -165,7 +165,6 @@ function oznacVikendyASvatky(){
 
   poleDnyVTydnu.forEach((td, colIndex) => {
     if (td.textContent==='Ne'||td.textContent==='So'){
-      console.log(td) 
       dejClassuVikendu(colIndex);
     }   
   });
@@ -355,19 +354,48 @@ function zjistiPotrebuSmen() {
 };
  return potrebaSmen
 }
+
+/**
+ * 
+ * @param {nastavenaPotrebaSmen} potrebaSmen 
+ * @param {poleSRadky} radky 
+ * @param {indexSloupceKeKontrole} den 
+ * @returns upravenou kopii puvodni potrebySmen
+ */
+function zjistiPozadavky(potrebaSmen, radky, den) {
+  potrebaSmenPoPozadavcich = {...potrebaSmen};
+  radky.forEach(row => {if (row.children[den].textContent==='D' && (row.children[den].classList.contains('vikend') === false||row.children[den].classList.contains('svatek') === false)){
+    potrebaSmenPoPozadavcich.denni -= 1;
+  }})
+  radky.forEach(row => {if (row.children[den].textContent==='R' && (row.children[den].classList.contains('vikend') === false||row.children[den].classList.contains('svatek') === false)){
+    potrebaSmenPoPozadavcich.denni -= 1;
+  }})
+  radky.forEach(row => {if (row.children[den].textContent==='N' && (row.children[den].classList.contains('vikend') === false||row.children[den].classList.contains('svatek') === false)){
+    potrebaSmenPoPozadavcich.denni -= 1;
+  }})
+  radky.forEach(row => {if (row.children[den].textContent==='D' && (row.children[den].classList.contains('vikend') === true||row.children[den].classList.contains('svatek') === true)){
+    potrebaSmenPoPozadavcich.denniVikendova -= 1;
+  }})
+  radky.forEach(row => {if (row.children[den].textContent==='N' && (row.children[den].classList.contains('vikend') === true||row.children[den].classList.contains('svatek') === true)){
+    potrebaSmenPoPozadavcich.denniVikendova -= 1;
+  }})   
+  return potrebaSmenPoPozadavcich
+}
+
 /**funkce pro vygenerování směn v celém měsíci. Bere v potaz úvazek, i hodiny z předešlého měsíce.
  * 
  */
 function generujSmeny() {
   const radky = document.querySelectorAll('.datovyRadek');
-  document.querySelectorAll('.bunkaSeSmenami').forEach(bunka => bunka.textContent = '');
+  //document.querySelectorAll('.bunkaSeSmenami').forEach(bunka => bunka.textContent = '');
   const potrebaSmen = zjistiPotrebuSmen();
 
   for (let den = indexSloupceZacatkuKalendare; den <= pocetDniVMesici + pocetSloupcuKonceKalendare; den++) {
     kontrolaVcerejsiSmeny(radky, den);
+    const potrebaSmenPoPozadavcich = zjistiPozadavky(potrebaSmen, radky, den)
     const dostupniLide=ziskejDostupneLidi(radky, den);
     zamichejDostupneLidi(dostupniLide);
-    pridelSmeny(dostupniLide, den, potrebaSmen);
+    pridelSmeny(dostupniLide, den, potrebaSmenPoPozadavcich);
   }
 
   radky.forEach(row=>{
