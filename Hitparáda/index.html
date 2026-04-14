@@ -17,7 +17,17 @@
   <body>
     <button id="přidavač">Přidat řádek</button>
     <button id="generatorSmen">Generuj směny</button>
-    <table border="1">
+    <label for="vyberPoctuNaDenni">Pracovní dny denní:</label>
+    <input type="number" class="inputProSmeny" id="vyberPoctuNaDenni" placeholder="počet lidí na směně"></input>
+    <label for="vyberPoctuNaRanni">Pracovní dny ranní:</label>
+    <input type="number" class="inputProSmeny" id="vyberPoctuNaRanni" placeholder="počet lidí na směně"></input>
+    <label for="vyberPoctuNaNocni">Pracovní dny noční:</label>
+    <input type="number" class="inputProSmeny" id="vyberPoctuNaNocni" placeholder="počet lidí na směně"></input>
+    <label for="vyberPoctuNaDenniVikendy">Víkendy/svátky denní:</label>
+    <input type="number" class="inputProSmeny" id="vyberPoctuNaDenniVikendy" placeholder="počet lidí na směně"></input>
+    <label for="vyberPoctuNaNocniVikendy">Víkendy/svátky noční:</label>
+    <input type="number" class="inputProSmeny" id="vyberPoctuNaNocniVikendy" placeholder="počet lidí na směně"></input>
+    <table><thead>
   <tr id="Rok">
     <td></td>
     <td></td>
@@ -49,7 +59,8 @@
       </select></td>
     <td>Hodiny tuten měsíc</td>
     <td>Převod H</td>
-  </tr>
+  </tr></thead>
+  
   <tr id="Den"></tr>
   <tr id="DenVTýdnu">
   </tr>

@@ -1,208 +1,447 @@
 
-
-
-
 // kalendář
 const selectMesic = document.getElementById('selectMěsíc');
 const selectRok = document.getElementById('selectRok');
-let pocetDni = 0
-const dnyVTydnu = ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"]
+let pocetDniVMesici = 0;
+const indexUvazek = 0;
+const indexJmeno = 1;
+const indexHodinyZMinulehoMesice = 2;
+const indexSloupceZacatkuKalendare= 3;
+const pocetSloupcuKonceKalendare= 2;
+const indexRadkuHlavicky= 4;
+const dnyVTydnu = ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"];
 
 //vyplní roletku pro roky
-for (let r = 2020; r <= 2030; r++) {
-const opt = document.createElement('option');
-opt.value = r;
-opt.textContent = r;
-selectRok.appendChild(opt);
+for (let rok = 2022; rok <= new Date().getFullYear()+2; rok++) {
+  const opt = document.createElement('option');
+  opt.value = rok;
+  opt.textContent = rok;
+  selectRok.appendChild(opt);
 }
-//funkce k vykreslení kalendáře
-function renderKalendar(rok, mesic) {
 
-//čistka
+selectMesic.value = new Date().getMonth()+1
+selectRok.value = new Date().getFullYear()
+
+//při změně v roletce měsícu a let upraví počet buněk dle data
+selectMesic.addEventListener('change', aktualizujKalendar);
+selectRok.addEventListener('change', aktualizujKalendar);
+document.getElementById('přidavač').addEventListener('click', pridaniRadku); //tlačitko pro přidání řádku
+document.getElementById('ubírač').addEventListener('click', odeberRadky)
+document.getElementById('generatorSmen').addEventListener('click', generujSmeny); //tlačítko pro generování směn
+
+/**funkce k vykreslení hlavičky kalendáře (první 4 řádky)
+ * @param {cislo} rok
+ * @param {cislo} mesic
+ */
+function renderKalendar(rok, mesic) {
   document.getElementById('Den').innerHTML = '';
   document.getElementById('DenVTýdnu').innerHTML = '';
 
-
   const denVTabulce = document.getElementById('Den');
   const dnyVTydnuTabulce = document.getElementById('DenVTýdnu');
+  pocetDniVMesici = new Date(rok, mesic, 0).getDate();
+  const celkovaSirka = indexSloupceZacatkuKalendare + pocetDniVMesici + pocetSloupcuKonceKalendare;
 
-  //zjistí počet dní v měsíci(0. den následujícího měsíce je poslední den aktuálního)
-  pocetDni = new Date(rok, mesic, 0).getDate();
+  document.getElementById('rokSpan').colSpan = pocetDniVMesici; 
+  document.getElementById('měsícSpan').colSpan = pocetDniVMesici;
+  
+  for (let prazdneBunkyPredKalendarem = 0; prazdneBunkyPredKalendarem< indexSloupceZacatkuKalendare; prazdneBunkyPredKalendarem++){
+    denVTabulce.appendChild(pridejBunku());
+    dnyVTydnuTabulce.appendChild(pridejBunku());
+  }
 
-  //roztáhne buňku pro rok
-  document.getElementById('rokSpan').colSpan = pocetDni; 
+  for (let cislaKalendarnichDnu = 1;cislaKalendarnichDnu<=pocetDniVMesici; cislaKalendarnichDnu++){
+    const sloupecDen = pridejBunku();
+    sloupecDen.textContent = cislaKalendarnichDnu;
+    denVTabulce.appendChild(sloupecDen);
+  }
 
-  //roztáhne buňku pro měsíc
-  document.getElementById('měsícSpan').colSpan = pocetDni;
+  for (let nazevDneVtydnu = 1; nazevDneVtydnu <= pocetDniVMesici; nazevDneVtydnu++){
+    const sloupceDnyVTydnu = pridejBunku();
+    let denVTydnu = new Date(rok, mesic-1, nazevDneVtydnu).getDay();
+    sloupceDnyVTydnu.textContent = dnyVTydnu[denVTydnu];
+    dnyVTydnuTabulce.appendChild(sloupceDnyVTydnu);
+  }
 
-
-  //vytvoří buňky pro dny
-  for (let i = -2;i<=pocetDni+2;i++){
-  const sloupceDen = document.createElement('td');
-  if (i<1) {sloupceDen.textContent = ''} else {sloupceDen.textContent = i};
-  if (i>pocetDni) {sloupceDen.textContent = ''}
-  denVTabulce.appendChild(sloupceDen);
-}
-  //vytvoří buňky pro názvy dnů
-  for (let j = -2;j<=pocetDni+2;j++){
-  const sloupceDnyVTydnu = document.createElement('td');
-  let denVTydnu = new Date(rok, mesic-1, j).getDay();
-  if (j<1) {sloupceDnyVTydnu.textContent = ''} else {sloupceDnyVTydnu.textContent = dnyVTydnu[denVTydnu]};
-  if (j>pocetDni) {sloupceDnyVTydnu.textContent = ''};
-  dnyVTydnuTabulce.appendChild(sloupceDnyVTydnu);
-
-  const celkovaSirka = 3 + pocetDni + 2; // +1 kvůli sloupci "Jména"
+  for (let prazdneBunkyZaKalendarem = 0; prazdneBunkyZaKalendarem<pocetSloupcuKonceKalendare; prazdneBunkyZaKalendarem++){
+    denVTabulce.appendChild(pridejBunku());
+    dnyVTydnuTabulce.appendChild(pridejBunku());
+  }
   synchronizujRadky(celkovaSirka);
+  oznacVikendyASvatky();
 }
-}
-
 
 //funkce k znovunačtení tabulky podle výběru v roletkách
-function aktualizuj() {
-  const vybranyMesic = parseInt(selectMěsíc.value); 
+function aktualizujKalendar() {
+  const vybranyMesic = parseInt(selectMesic.value); 
   const vybranyRok = parseInt(selectRok.value);
   renderKalendar(vybranyRok, vybranyMesic);
 }
-//spouštěče při změnách v roletkách roku a měsíců
-selectMěsíc.addEventListener('change', aktualizuj);
-selectRok.addEventListener('change', aktualizuj);
 
-
-//přídá řádky do tabulky
-function přidáníŘádku(){
-  const table = document.querySelector('table');
-  const newRow = document.createElement('tr');
-  const rows = table.querySelectorAll('tr');
-  const rowIndex = rows.length-4;
-
-  for (let i = 0; i < pocetDni+5; i++) {
-    const td = document.createElement('td');
-    td.setAttribute('contenteditable', 'true');
-    td.setAttribute('data-col', i);
-    td.setAttribute('data-row', rowIndex);
-    newRow.appendChild(td);
+/** přidá classy/atributy bunce
+ * @param {HTMLElementBunky} bunka
+ * @param {cislo} indexBunky
+ */
+function pridelClassuPodleSloupce(bunka,indexBunky){
+  bunka.className = '';
+  bunka.contentEditable = true;
+  if (indexBunky===indexUvazek){
+    bunka.className = ' uvazek';
+    bunka.setAttribute('data-col', indexBunky)
+  } else if (indexBunky===indexJmeno){
+    bunka.className = ' jmeno';
+    bunka.setAttribute('data-col', indexBunky)
+  } else if (indexBunky===indexHodinyZMinulehoMesice){
+    bunka.className = ' hodinyZMinulehoMesice';
+    bunka.setAttribute('data-col', indexBunky)
+  } else if (indexBunky>=indexSloupceZacatkuKalendare && indexBunky<indexSloupceZacatkuKalendare+pocetDniVMesici){
+    bunka.className = ' bunkaSeSmenami';
+    bunka.setAttribute('data-col', indexBunky)
+  } else if (indexBunky===pocetDniVMesici+indexSloupceZacatkuKalendare){
+    bunka.className = ' hodinyTentoMesic';
+    bunka.setAttribute('data-col', indexBunky)
+    bunka.contentEditable = false;
+  } else if (indexBunky===pocetDniVMesici+indexSloupceZacatkuKalendare+1){
+    bunka.className = ' prevodHodinDal'
+    bunka.setAttribute('data-col', indexBunky)
   }
-  table.appendChild(newRow);
+}
+
+/**funkce která vrátí měsíc a den pro daný rok na které připadá velikonoční neděle
+ * @param {rokProVypocetDataVelikonoc} rok 
+ * @returns měsíc a den velikonoc
+ */
+function vypocetVelikonoc(rok) {
+  const a = rok % 19;
+  const b = Math.floor(rok / 100);
+  const c = rok % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mesic = Math.floor((h + l - 7 * m + 114) / 31); // 3 = březen, 4 = duben
+  const den = ((h + l - 7 * m + 114) % 31) + 1;
+
+  return { mesic: mesic,
+           den: den
+         };
+}
+
+/** funkce která označí celý sloupec classou "vikend"
+ * @param {sloupecDne} indexSloupce 
+ */
+function dejClassuVikendu(indexSloupce){
+  Array.from(document.querySelectorAll('tbody tr')).forEach(row => {
+    const bunka = row.children[indexSloupce];       
+    bunka.classList.add('vikend');  
+  });
+}
+
+/** funkce která označí celý sloupec classou "svatek"
+ * @param {sloupecDne} indexSloupce 
+ */
+function dejClassuSvatku(indexSloupce){
+  Array.from(document.querySelectorAll('tbody tr')).forEach(row => {
+    const bunka = row.children[indexSloupce];       
+    bunka.classList.add('svatek');  
+  });
+}
+
+/** funkce která přidělí všem buňkám ve sloupci classy "vikend" nebo "svatek" v měsíci
+ */
+function oznacVikendyASvatky(){
+  const poleDnyVTydnu = Array.from(document.getElementById('DenVTýdnu').children);
+  const poleDatumVMesici = Array.from(document.getElementById('Den').children);
+  const dnesniDatum = {
+    mesic: parseInt(selectMesic.value),
+    rok: parseInt(selectRok.value)
+  };
+  const datumVelikonoc = vypocetVelikonoc(dnesniDatum.rok)
+
+  poleDnyVTydnu.forEach((td, colIndex) => {
+    if (td.textContent==='Ne'||td.textContent==='So'){
+      dejClassuVikendu(colIndex);
+    }   
+  });
+
+  if (dnesniDatum.mesic === 1) {
+    const indexSloupce = poleDatumVMesici.findIndex((td)=> td.textContent === '1');
+    dejClassuSvatku(indexSloupce);
+  } else if (dnesniDatum.mesic === datumVelikonoc.mesic){
+      const indexSloupce = poleDatumVMesici.findIndex((td)=> td.textContent === String(datumVelikonoc.den-2));
+      dejClassuSvatku(indexSloupce);
+      const indexSloupce2 = poleDatumVMesici.findIndex((td)=> td.textContent === String(datumVelikonoc.den+1));
+      dejClassuSvatku(indexSloupce2);
+  } else if (dnesniDatum.mesic === 5){
+      const indexSloupce = poleDatumVMesici.findIndex((td)=> td.textContent === '1');
+      dejClassuSvatku(indexSloupce);
+      const indexSloupce2 = poleDatumVMesici.findIndex((td)=> td.textContent === '8');
+      dejClassuSvatku(indexSloupce2);
+  } else if (dnesniDatum.mesic === 7){
+      const indexSloupce = poleDatumVMesici.findIndex((td)=> td.textContent === '5');
+      dejClassuSvatku(indexSloupce);
+      const indexSloupce2 = poleDatumVMesici.findIndex((td)=> td.textContent === '6');
+      dejClassuSvatku(indexSloupce2);
+  } else if (dnesniDatum.mesic === 9){
+      const indexSloupce = poleDatumVMesici.findIndex((td)=> td.textContent === '28');
+      dejClassuSvatku(indexSloupce);
+  } else if (dnesniDatum.mesic === 10){
+      const indexSloupce = poleDatumVMesici.findIndex((td)=> td.textContent === '28');
+      dejClassuSvatku(indexSloupce);
+  } else if (dnesniDatum.mesic === 11){
+      const indexSloupce = poleDatumVMesici.findIndex((td)=> td.textContent === '17');
+      dejClassuSvatku(indexSloupce);
+  } else if (dnesniDatum.mesic === 12){
+      const indexSloupce = poleDatumVMesici.findIndex((td)=> td.textContent === '24');
+      dejClassuSvatku(indexSloupce);
+      const indexSloupce2 = poleDatumVMesici.findIndex((td)=> td.textContent === '25');
+      dejClassuSvatku(indexSloupce2);
+      const indexSloupce3 = poleDatumVMesici.findIndex((td)=> td.textContent === '26');
+      dejClassuSvatku(indexSloupce3);
+  };
+}
+
+/** vytvori bunku
+ * @returns {HTMLElementBunky}
+ */
+function pridejBunku(){
+  const bunka = document.createElement('td')
+  return bunka
+}
+
+/**přídá řádek do tabulky
+ * @returns {HTMLElementNovyRadekTabulky}
+ */
+function pridaniRadku(){
+  const tabulka = document.querySelector('tbody');
+  const novyRadek = document.createElement('tr');
+  const indexRadku = tabulka.querySelectorAll('tr').length-indexRadkuHlavicky;
+  const extraSloupce= indexSloupceZacatkuKalendare + pocetSloupcuKonceKalendare;
+  for (let sloupec = 0; sloupec < pocetDniVMesici + extraSloupce; sloupec++) {
+    const td = pridejBunku()
+    pridelClassuPodleSloupce(td, sloupec)
+    novyRadek.setAttribute('data-row', indexRadku);
+    novyRadek.appendChild(td);
+  }
+  novyRadek.className = ' datovyRadek';
+  tabulka.appendChild(novyRadek);
+  oznacVikendyASvatky();
 };
-document.getElementById('přidavač').addEventListener('click', přidáníŘádku);
 
-
-//funkce pro synchronizaci počtu sloupců při změně v roletkách
+/**funkce pro synchronizaci počtu sloupců při změně v roletkách a vyčištění datových buňěk
+ * @param {cislo} novyPocetSloupcu
+ */
 function synchronizujRadky(novyPocetSloupcu) {
-  const datoveRadky = document.querySelectorAll('table tr:not(#Rok):not(#Měsíc):not(#Den):not(#DenVTýdnu)');
+  const datoveRadky = document.querySelectorAll(' .datovyRadek');
 
-  datoveRadky.forEach((row, rowIndex) => {
-    // když sloupců přibyde
+  datoveRadky.forEach((row) => {
     while (row.children.length < novyPocetSloupcu) {
-      const td = document.createElement('td');
-      td.setAttribute('contenteditable', 'true');
+      const td = pridejBunku();
       row.appendChild(td);
     }
-    // když sloupců ubyde
+
     while (row.children.length > novyPocetSloupcu) {
       row.removeChild(row.lastChild);
     }
 
-    // přečíslování data-col a data-row kvůli novým sloupcům
     Array.from(row.children).forEach((td, colIndex) => {
-      td.setAttribute('data-col', colIndex); // Index sloupce (0, 1, 2... až 31)
-      td.setAttribute('data-row', rowIndex); // Index řádku (0, 1, 2...)
+      pridelClassuPodleSloupce(td, colIndex);
       if (colIndex>2) {td.innerHTML = ''};
     });
   });
 }
 
-
-const potrebaSmen = {
-  denni: 3, // Počet lidí na ranní
-  nocni: 2  // Počet lidí na noční
-};
-
-//funkce co spočte kolik hodin aktuálně člověk v měsíci má
-function spoctiHodiny(row) {
+/**funkce co spočte kolik hodin aktuálně člověk v měsíci má
+ * @param {radekPracovnika} radek 
+ * @returns {vratiSoucetHodinPracovnika} vrati soucet hodin daneho pracovnika(radku)
+ */
+function spoctiHodiny(radek) {
       let hodiny = 0;
-      hodiny += parseFloat(row.children[2].textContent) || 0;
-      Array.from(row.children).forEach(td => {
-        if (td.textContent === "D") hodiny += 12;
-        if (td.textContent === "N") hodiny += 12;
+      hodiny += parseFloat(radek.querySelector('.hodinyZMinulehoMesice').textContent) || 0;
+      Array.from(radek.querySelectorAll('.bunkaSeSmenami')).forEach(td => {
+        if (td.textContent === "D") hodiny += 12
+        else if (td.textContent === "N") hodiny += 12
+        else if (td.textContent === "R") hodiny += 8;
   });
       return hodiny;
 }
 
-//funkce pro generování směn v celém měsíci
-function generujSmeny() {
-  const radky = document.querySelectorAll('table tr:not(#Rok):not(#Měsíc):not(#Den):not(#DenVTýdnu)');
-  //cyklus která prochází měsíc po jednotlivých dnech
-  for (let den = 3; den <= pocetDni+2; den++) {
-    const colIndex = den;
-    
-    //zkontroluje všechny jestli den předtím nebyli v práci
-    radky.forEach(row => {
-      const td = row.children[colIndex];
-      const vcerejsiSmena = den > 1 ? row.children[colIndex - 1].textContent : "";
+/**funkce co projde včerejší směny a přidělí poN pokud byl člověk na noční
+ * @param {radkyVsechPracovniku} radky
+ * @param {aktualniSloupec} den
+ * */
+function kontrolaVcerejsiSmeny(radky, den){
+  radky.forEach(row => {
+    const td = row.children[den];
+    const vcerejsiSmena = den > indexSloupceZacatkuKalendare ? row.children[den - 1].textContent : "";
       
-      if (vcerejsiSmena === "N") {
-        td.textContent = "poN";
-        td.style.backgroundColor = "#f5f5f5";
-        return;
-      }
-    })
+    if (vcerejsiSmena === "N") {
+      td.textContent = "poN";      
+    }
+  });
+}
 
-      //vytvoří array lidí pro výběr na směnu z lidí co nemají požadavek/nemají už směnu
-    const dostupniLide = Array.from(radky).filter(row => {
-      const td = row.children[colIndex];
-      return td.textContent !== "D" && td.textContent !== "V" && td.textContent !== "N" && td.textContent !== "R" && td.textContent !== "poN"; // D = Dovolená, P = Paragraf
+/**funkce pro ziskani pole s dostupnymi lidmi
+ * @param {radkyVsechPracovniku} radky
+ * @param {aktualniSloupec} den
+ * @returns {poleSLidmi} vrati pole s dostupnymi lidmi
+ */
+function ziskejDostupneLidi (radky, den){
+  const dostupniLide = Array.from(radky).filter(radek => {
+      const td = radek.children[den];
+      return td.textContent !== "D" && td.textContent !== "V" && td.textContent !== "N" && td.textContent !== "R" && td.textContent !== "poN";
     });
+  return dostupniLide;
+}
 
-    dostupniLide.sort((a, b) => {
-      const uvazekA = parseFloat(a.children[0].textContent)*160 || 160;
-      const uvazekB = parseFloat(b.children[0].textContent)*160 || 160;
+/**
+ * @param {poleSDostupnymiLidmi} dostupniLide 
+ */
+function zamichejDostupneLidi (dostupniLide) {
+  dostupniLide.sort((a, b) => {
+    const uvazekA = parseFloat(a.children[indexUvazek].textContent)*160 || 160;
+    const uvazekB = parseFloat(b.children[indexUvazek].textContent)*160 || 160;
   
-  // 1. Spočítáme procento naplnění (např. 0.25)
-      const pomerA = spoctiHodiny(a) / uvazekA;
-      const pomerB = spoctiHodiny(b) / uvazekB;
+    const pomerA = spoctiHodiny(a) / uvazekA;
+    const pomerB = spoctiHodiny(b) / uvazekB;
 
-  // 2. Zaokrouhlíme na 10 % (vytvoříme "hladiny")
-  // Díky tomu lidé s 21 % a 25 % budou v jedné skupině
-      const hladinaA = Math.floor(pomerA * 10);
-      const hladinaB = Math.floor(pomerB * 10);
+    const hladinaA = Math.floor(pomerA * 10);
+    const hladinaB = Math.floor(pomerB * 10);
 
-      if (hladinaA !== hladinaB) {
-        return hladinaA - hladinaB; // Ti s prázdnějším úvazkem mají přednost
+    if (hladinaA !== hladinaB) {
+      return hladinaA - hladinaB;
       }
 
-  // 3. Pokud jsou ve stejné hladině, rozhodne NÁHODA
-      return Math.random() - 0.5;
-    });
-      //náhodně je zamíchá
+      return Math.random() - 0.5; 
+  })
+}
 
-      //bere lidi ze zamíchaných dostupných lidí a přiřazuje směny
-      for (let i = 0; i < potrebaSmen.nocni && i < dostupniLide.length; i++) {
-      const tdSmeny = dostupniLide[i].children[colIndex]; 
-      tdSmeny.textContent = "N";
-      tdSmeny.style.backgroundColor = "#c5cae9";
-      }
-      for (let j = potrebaSmen.nocni; j < potrebaSmen.denni+potrebaSmen.nocni && j < dostupniLide.length; j++) {
-      const tdSmeny = dostupniLide[j].children[colIndex]; 
-      tdSmeny.textContent = "D";
-      tdSmeny.style.backgroundColor = "#ebbbc3";
-      }
-
+/**
+ * @param {poleSDostupnymiLidmi} dostupniLide 
+ * @param {aktualniSloupec} den 
+ * @param {objektSPotrebamiSmen} potrebaSmen
+ */
+function pridelSmenyVPracovniDny(dostupniLide, den, potrebaSmen) {
+  for (let i = 0; i < potrebaSmen.nocni && i < dostupniLide.length; i++) {
+    const tdSmeny = dostupniLide[i].children[den]; 
+    tdSmeny.textContent = "N";
   }
+
+  for (let j = potrebaSmen.nocni; j < potrebaSmen.denni+potrebaSmen.nocni && j < dostupniLide.length; j++) {
+    const tdSmeny = dostupniLide[j].children[den]; 
+    tdSmeny.textContent = "D";      
+  }
+
+  for (let k = potrebaSmen.denni + potrebaSmen.nocni; k < potrebaSmen.denni + potrebaSmen.nocni + potrebaSmen.ranni; k++) {
+    const tdSmeny = dostupniLide[k].children[den]; 
+    tdSmeny.textContent = "R";
+  }
+}
+
+function pridelSmenyOVikendech (dostupniLide, den, potrebaSmen) {
+  for (let i = 0; i < potrebaSmen.nocniVikendova && i < dostupniLide.length; i++) {
+    const tdSmeny = dostupniLide[i].children[den]; 
+    tdSmeny.textContent = "N";
+  }
+
+  for (let j = potrebaSmen.nocniVikendova; j < potrebaSmen.denniVikendova+potrebaSmen.nocniVikendova && j < dostupniLide.length; j++) {
+    const tdSmeny = dostupniLide[j].children[den]; 
+    tdSmeny.textContent = "D";      
+  }
+}
+
+/** funkce pro přidělení směn
+ * @param {poleSDostupnymiLidmi} dostupniLide 
+ * @param {aktualniSloupec} den 
+ * @param {objektSPotrebamiSmen} potrebaSmen
+ */
+function pridelSmeny(dostupniLide, den, potrebaSmen) {
+  if (dostupniLide[0].children[den].classList.contains('vikend')||dostupniLide[0].children[den].classList.contains('svatek')) {
+    pridelSmenyOVikendech(dostupniLide, den, potrebaSmen)
+  } else {pridelSmenyVPracovniDny(dostupniLide, den, potrebaSmen)}
+
+}
+
+/** funkce pro vygenerování objektu s potřebami směn v měsíci
+ * @returns objekt s potřebami směn v měsíci
+ */
+function zjistiPotrebuSmen() {
+  const potrebaSmen = {
+  denni: parseInt(document.getElementById('vyberPoctuNaDenni').value),
+  ranni: parseInt(document.getElementById('vyberPoctuNaRanni').value),
+  nocni: parseInt(document.getElementById('vyberPoctuNaNocni').value),
+  denniVikendova: parseInt(document.getElementById('vyberPoctuNaDenniVikendy').value),
+  nocniVikendova: parseInt(document.getElementById('vyberPoctuNaNocniVikendy').value)  
+};
+ return potrebaSmen
+}
+
+/** funkce která zjistí jestli v tabulce už nejsou vyplněné některé směny a zohlední je při generaci směn
+ * @param {nastavenaPotrebaSmen} potrebaSmen 
+ * @param {poleSRadky} radky 
+ * @param {indexSloupceKeKontrole} den 
+ * @returns upravenou kopii puvodni potrebySmen
+ */
+function zjistiPozadavky(potrebaSmen, radky, den) {
+  let potrebaSmenPoPozadavcich = {...potrebaSmen};
+  
+  radky.forEach(row => {
+    const obsahbunky = row.children[den].textContent.trim();
+    const jeVikend = row.children[den].classList.contains('vikend');
+    const jeSvátek = row.children[den].classList.contains('svatek');
+
+    if (obsahbunky !== '') {
+      if (obsahbunky === 'D' && !jeVikend && !jeSvátek) {
+        potrebaSmenPoPozadavcich.denni -= 1;
+      } else if (obsahbunky === 'R' && !jeVikend && !jeSvátek) {
+        potrebaSmenPoPozadavcich.ranni -= 1;
+      } else if (obsahbunky === 'N' && !jeVikend && !jeSvátek) {
+        potrebaSmenPoPozadavcich.nocni -= 1;
+      } else if (obsahbunky === 'D' && (jeVikend || jeSvátek)) {
+        potrebaSmenPoPozadavcich.denniVikendova -= 1;
+      } else if (obsahbunky === 'N' && (jeVikend || jeSvátek)) {
+        potrebaSmenPoPozadavcich.nocniVikendova -= 1;
+      }
+    }
+  });
+  return potrebaSmenPoPozadavcich;
+}
+
+/**funkce pro vygenerování směn v celém měsíci. Bere v potaz úvazek, i hodiny z předešlého měsíce.
+ * 
+ */
+function generujSmeny() {
+  const radky = document.querySelectorAll('.datovyRadek');
+  //document.querySelectorAll('.bunkaSeSmenami').forEach(bunka => bunka.textContent = '');
+  const potrebaSmen = zjistiPotrebuSmen();
+
+  for (let den = indexSloupceZacatkuKalendare; den <= pocetDniVMesici + pocetSloupcuKonceKalendare; den++) {
+    kontrolaVcerejsiSmeny(radky, den);
+    const potrebaSmenPoPozadavcich = zjistiPozadavky(potrebaSmen, radky, den)
+    const dostupniLide=ziskejDostupneLidi(radky, den);
+    zamichejDostupneLidi(dostupniLide);
+    pridelSmeny(dostupniLide, den, potrebaSmenPoPozadavcich);
+  }
+
   radky.forEach(row=>{
-    row.children[pocetDni+3].textContent = spoctiHodiny(row)
+    row.children[pocetDniVMesici+indexSloupceZacatkuKalendare].textContent = spoctiHodiny(row)
   })
 };
 
-// odebere řádky z tabulky
-document.getElementById('ubírač').addEventListener('click', function() {
-  const table = document.querySelector('table');
-  const rows = table.querySelectorAll('tr');
-  if (rows.length > 1) {
-    table.removeChild(rows[rows.length - 1]);
-  };})
-document.getElementById('generatorSmen').addEventListener('click', generujSmeny)
-//zajistí aby prvotní render byl na dnešní rok/měsíc
-selectMesic.value = new Date().getMonth()+1
-selectRok.value = new Date().getFullYear()
+/** odebere řádek z tabulky
+ * 
+ */
+function odeberRadky(){
+  const tabulka = document.querySelector('tbody');
+  const radky = tabulka.querySelectorAll('tr');
+  if (radky.length > 1) {
+    tabulka.removeChild(radky[radky.length - 1]);
+  };
+}
+
 renderKalendar(new Date().getFullYear(),new Date().getMonth()+1)
