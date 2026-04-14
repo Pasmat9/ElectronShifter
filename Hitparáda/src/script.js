@@ -321,24 +321,50 @@ function zamichejDostupneLidi (dostupniLide) {
   })
 }
 
+/**
+ * @param {poleSDostupnymiLidmi} dostupniLide 
+ * @param {aktualniSloupec} den 
+ * @param {objektSPotrebamiSmen} potrebaSmen
+ */
+function pridelSmenyVPracovniDny(dostupniLide, den, potrebaSmen) {
+  for (let i = 0; i < potrebaSmen.nocni && i < dostupniLide.length; i++) {
+    const tdSmeny = dostupniLide[i].children[den]; 
+    tdSmeny.textContent = "N";
+  }
+
+  for (let j = potrebaSmen.nocni; j < potrebaSmen.denni+potrebaSmen.nocni && j < dostupniLide.length; j++) {
+    const tdSmeny = dostupniLide[j].children[den]; 
+    tdSmeny.textContent = "D";      
+  }
+
+  for (let k = potrebaSmen.denni + potrebaSmen.nocni; k < potrebaSmen.denni + potrebaSmen.nocni + potrebaSmen.ranni; k++) {
+    const tdSmeny = dostupniLide[k].children[den]; 
+    tdSmeny.textContent = "R";
+  }
+}
+
+function pridelSmenyOVikendech (dostupniLide, den, potrebaSmen) {
+  for (let i = 0; i < potrebaSmen.nocniVikendova && i < dostupniLide.length; i++) {
+    const tdSmeny = dostupniLide[i].children[den]; 
+    tdSmeny.textContent = "N";
+  }
+
+  for (let j = potrebaSmen.nocniVikendova; j < potrebaSmen.denniVikendova+potrebaSmen.nocniVikendova && j < dostupniLide.length; j++) {
+    const tdSmeny = dostupniLide[j].children[den]; 
+    tdSmeny.textContent = "D";      
+  }
+}
+
 /** funkce pro přidělení směn
  * @param {poleSDostupnymiLidmi} dostupniLide 
  * @param {aktualniSloupec} den 
  * @param {objektSPotrebamiSmen} potrebaSmen
  */
 function pridelSmeny(dostupniLide, den, potrebaSmen) {
-  for (let i = 0; i < potrebaSmen.nocni && i < dostupniLide.length; i++) {
-    const tdSmeny = dostupniLide[i].children[den]; 
-    tdSmeny.textContent = "N";
-  }
-  for (let j = potrebaSmen.nocni; j < potrebaSmen.denni+potrebaSmen.nocni && j < dostupniLide.length; j++) {
-    const tdSmeny = dostupniLide[j].children[den]; 
-    tdSmeny.textContent = "D";      
-  }
-  for (let k = potrebaSmen.denni + potrebaSmen.nocni; k < potrebaSmen.denni + potrebaSmen.nocni + potrebaSmen.ranni; k++) {
-    const tdSmeny = dostupniLide[k].children[den]; 
-    tdSmeny.textContent = "R";
-  }
+  if (dostupniLide[0].children[den].classList.contains('vikend')||dostupniLide[0].children[den].classList.contains('svatek')) {
+    pridelSmenyOVikendech(dostupniLide, den, potrebaSmen)
+  } else {pridelSmenyVPracovniDny(dostupniLide, den, potrebaSmen)}
+
 }
 
 /** funkce pro vygenerování objektu s potřebami směn v měsíci
@@ -355,31 +381,35 @@ function zjistiPotrebuSmen() {
  return potrebaSmen
 }
 
-/**
- * 
+/** funkce která zjistí jestli v tabulce už nejsou vyplněné některé směny a zohlední je při generaci směn
  * @param {nastavenaPotrebaSmen} potrebaSmen 
  * @param {poleSRadky} radky 
  * @param {indexSloupceKeKontrole} den 
  * @returns upravenou kopii puvodni potrebySmen
  */
 function zjistiPozadavky(potrebaSmen, radky, den) {
-  potrebaSmenPoPozadavcich = {...potrebaSmen};
-  radky.forEach(row => {if (row.children[den].textContent==='D' && (row.children[den].classList.contains('vikend') === false||row.children[den].classList.contains('svatek') === false)){
-    potrebaSmenPoPozadavcich.denni -= 1;
-  }})
-  radky.forEach(row => {if (row.children[den].textContent==='R' && (row.children[den].classList.contains('vikend') === false||row.children[den].classList.contains('svatek') === false)){
-    potrebaSmenPoPozadavcich.denni -= 1;
-  }})
-  radky.forEach(row => {if (row.children[den].textContent==='N' && (row.children[den].classList.contains('vikend') === false||row.children[den].classList.contains('svatek') === false)){
-    potrebaSmenPoPozadavcich.denni -= 1;
-  }})
-  radky.forEach(row => {if (row.children[den].textContent==='D' && (row.children[den].classList.contains('vikend') === true||row.children[den].classList.contains('svatek') === true)){
-    potrebaSmenPoPozadavcich.denniVikendova -= 1;
-  }})
-  radky.forEach(row => {if (row.children[den].textContent==='N' && (row.children[den].classList.contains('vikend') === true||row.children[den].classList.contains('svatek') === true)){
-    potrebaSmenPoPozadavcich.denniVikendova -= 1;
-  }})   
-  return potrebaSmenPoPozadavcich
+  let potrebaSmenPoPozadavcich = {...potrebaSmen};
+  
+  radky.forEach(row => {
+    const obsahbunky = row.children[den].textContent.trim();
+    const jeVikend = row.children[den].classList.contains('vikend');
+    const jeSvátek = row.children[den].classList.contains('svatek');
+
+    if (obsahbunky !== '') {
+      if (obsahbunky === 'D' && !jeVikend && !jeSvátek) {
+        potrebaSmenPoPozadavcich.denni -= 1;
+      } else if (obsahbunky === 'R' && !jeVikend && !jeSvátek) {
+        potrebaSmenPoPozadavcich.ranni -= 1;
+      } else if (obsahbunky === 'N' && !jeVikend && !jeSvátek) {
+        potrebaSmenPoPozadavcich.nocni -= 1;
+      } else if (obsahbunky === 'D' && (jeVikend || jeSvátek)) {
+        potrebaSmenPoPozadavcich.denniVikendova -= 1;
+      } else if (obsahbunky === 'N' && (jeVikend || jeSvátek)) {
+        potrebaSmenPoPozadavcich.nocniVikendova -= 1;
+      }
+    }
+  });
+  return potrebaSmenPoPozadavcich;
 }
 
 /**funkce pro vygenerování směn v celém měsíci. Bere v potaz úvazek, i hodiny z předešlého měsíce.
@@ -415,4 +445,3 @@ function odeberRadky(){
 }
 
 renderKalendar(new Date().getFullYear(),new Date().getMonth()+1)
-console.log(vypocetVelikonoc(2025))
