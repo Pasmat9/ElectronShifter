@@ -10,6 +10,7 @@ const indexSloupceZacatkuKalendare= 3;
 const pocetSloupcuKonceKalendare= 2;
 const indexRadkuHlavicky= 4;
 const dnyVTydnu = ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"];
+const minNocnichSmen = 3;
 
 //vyplní roletku pro roky
 for (let rok = 2022; rok <= new Date().getFullYear()+2; rok++) {
@@ -293,9 +294,11 @@ function kontrolaVcerejsiSmeny(radky, den){
  */
 function ziskejDostupneLidi (radky, den){
   const dostupniLide = Array.from(radky).filter(radek => {
-      const td = radek.children[den];
-      return td.textContent !== "D" && td.textContent !== "V" && td.textContent !== "N" && td.textContent !== "R" && td.textContent !== "poN";
-    });
+    const td = radek.children[den];
+    const tdPredchozi = radek.children[den-1]
+    return tdPredchozi.textContent !== "D" && td.textContent !== "D" && td.textContent !== "V" && td.textContent !== "N" && td.textContent !== "R" && td.textContent !== "poN";
+  })
+  ;
   return dostupniLide;
 }
 
@@ -327,32 +330,50 @@ function zamichejDostupneLidi (dostupniLide) {
  * @param {objektSPotrebamiSmen} potrebaSmen
  */
 function pridelSmenyVPracovniDny(dostupniLide, den, potrebaSmen) {
-  for (let i = 0; i < potrebaSmen.nocni && i < dostupniLide.length; i++) {
-    const tdSmeny = dostupniLide[i].children[den]; 
-    tdSmeny.textContent = "N";
-  }
-
-  for (let j = potrebaSmen.nocni; j < potrebaSmen.denni+potrebaSmen.nocni && j < dostupniLide.length; j++) {
+  for (let j = 0; j < potrebaSmen.denni && j < dostupniLide.length; j++) {
     const tdSmeny = dostupniLide[j].children[den]; 
     tdSmeny.textContent = "D";      
   }
 
-  for (let k = potrebaSmen.denni + potrebaSmen.nocni; k < potrebaSmen.denni + potrebaSmen.nocni + potrebaSmen.ranni; k++) {
+  for (let k = potrebaSmen.denni; k < potrebaSmen.denni + potrebaSmen.ranni; k++) {
     const tdSmeny = dostupniLide[k].children[den]; 
     tdSmeny.textContent = "R";
   }
+
+  const zbyliLide = dostupniLide.slice((potrebaSmen.denni+potrebaSmen.ranni));
+  for (let i = potrebaSmen.denni + potrebaSmen.ranni; i < potrebaSmen.nocni + potrebaSmen.denni + potrebaSmen.ranni && i < dostupniLide.length; i++) {
+    const dostupniLideBezNocnich = zbyliLide.filter(radek => {
+      return pocetNocnichSmen(radek) < minNocnichSmen});
+ 
+    if (dostupniLideBezNocnich.length === 0){
+      const tdSmeny = dostupniLide[i].children[den]; 
+      tdSmeny.textContent = "N";
+    } else {const tdSmeny = dostupniLideBezNocnich[0].children[den]; 
+        tdSmeny.textContent = "N"}
+        console.log(dostupniLideBezNocnich)
+  }
+  
 }
 
 function pridelSmenyOVikendech (dostupniLide, den, potrebaSmen) {
-  for (let i = 0; i < potrebaSmen.nocniVikendova && i < dostupniLide.length; i++) {
-    const tdSmeny = dostupniLide[i].children[den]; 
-    tdSmeny.textContent = "N";
-  }
-
-  for (let j = potrebaSmen.nocniVikendova; j < potrebaSmen.denniVikendova+potrebaSmen.nocniVikendova && j < dostupniLide.length; j++) {
+  for (let j = 0; j < potrebaSmen.denniVikendova && j < dostupniLide.length; j++) {
     const tdSmeny = dostupniLide[j].children[den]; 
     tdSmeny.textContent = "D";      
   }
+
+  const zbyliLide = dostupniLide.slice(potrebaSmen.denniVikendova);
+  for (let i = potrebaSmen.denniVikendova; i < potrebaSmen.denniVikendova+potrebaSmen.nocniVikendova && i < dostupniLide.length; i++) {
+    const dostupniLideBezNocnich = zbyliLide.filter(radek => {
+      return pocetNocnichSmen(radek) < minNocnichSmen});
+
+    if (dostupniLideBezNocnich.length === 0){
+    const tdSmeny = dostupniLide[i].children[den]; 
+    tdSmeny.textContent = "N";
+    } else {const tdSmeny = dostupniLideBezNocnich[0].children[den]; 
+        tdSmeny.textContent = "N"}
+        console.log(dostupniLideBezNocnich)
+  }
+
 }
 
 /** funkce pro přidělení směn
@@ -364,9 +385,17 @@ function pridelSmeny(dostupniLide, den, potrebaSmen) {
   if (dostupniLide[0].children[den].classList.contains('vikend')||dostupniLide[0].children[den].classList.contains('svatek')) {
     pridelSmenyOVikendech(dostupniLide, den, potrebaSmen)
   } else {pridelSmenyVPracovniDny(dostupniLide, den, potrebaSmen)}
-
 }
 
+function pocetNocnichSmen(radek) {
+  let pocitadloNocnich = 0;
+  Array.from(radek.querySelectorAll('.bunkaSeSmenami')).forEach(td => {
+    if (td.textContent === "N") {
+      pocitadloNocnich++;
+    }
+  });
+  return pocitadloNocnich;
+}
 /** funkce pro vygenerování objektu s potřebami směn v měsíci
  * @returns objekt s potřebami směn v měsíci
  */
