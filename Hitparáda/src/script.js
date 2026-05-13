@@ -29,17 +29,16 @@ selectRok.addEventListener('change', aktualizujKalendar);
 document.getElementById('přidavač').addEventListener('click', pridaniRadku); //tlačitko pro přidání řádku
 document.getElementById('ubírač').addEventListener('click', odeberRadky)
 document.getElementById('generatorSmen').addEventListener('click', generujSmeny); //tlačítko pro generování směn
-document.getElementById('uloz').addEventListener('click', ulozData);
+document.getElementById('uloz').addEventListener('click', ulozDataDoJSON);
 document.getElementById('nacti').addEventListener('click', importovatZeSouboru);
 
-/** funkce k uložení aktuálního měsíce do JSON souboru
- *  
- */
-function ulozData(){
-  let datoveRadky = document.querySelectorAll('.datovyRadek');
 
-  let dataKulozeni = { rok: selectRok.value,
-    mesic: selectMesic.value,
+function ulozDataDoCache(){
+  let datoveRadky = document.querySelectorAll('.datovyRadek');
+  const stareDatum = JSON.parse(window.sessionStorage.getItem('ted-datum'));
+  let dataKulozeni = { 
+    rok: stareDatum.rok,
+    mesic: stareDatum.mesic,
     zamestnanci: Array.from(datoveRadky).map(row => {
       return {
         uvazek: row.children[indexUvazek].textContent,
@@ -48,11 +47,46 @@ function ulozData(){
         smeny: Array.from(row.querySelectorAll('.bunkaSeSmenami')).map(td => td.textContent)};
     })}
 
+    window.localStorage.setItem(`smeny-${dataKulozeni.rok}-${dataKulozeni.mesic}`, JSON.stringify(dataKulozeni))
+}
+
+/** funkce k uložení aktuálního měsíce do JSON souboru
+ *  
+ */
+function ulozDataDoJSON(){
+  ulozDataDoCache();
+
+  let dataKulozeni = {};
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const klic = localStorage.key(i);
+    if (klic.startsWith('smeny-')) {
+            dataKulozeni[klic] = JSON.parse(localStorage.getItem(klic));
+  }}
+
     //Bridge je objekt s funkcí v preLoadu, posílá data z render do main scriptu
     window.Bridge.ulozData(dataKulozeni);
 }
 
-
+function nactiDataZCache (){
+  const cache = window.localStorage.getItem(`smeny-${selectRok.value}-${selectMesic.value}`);
+    if (cache) {
+      const data = JSON.parse(cache);
+      console.log("Načtená data z cache:", data);
+      document.querySelectorAll('.datovyRadek').forEach(el => el.remove()); // Vyčistit
+        
+      data.zamestnanci.forEach(z => {
+        pridaniRadku();
+        const radek = document.querySelector('.datovyRadek:last-child');
+        radek.children[indexUvazek].textContent = z.uvazek;
+        radek.children[indexJmeno].textContent = z.jmeno;
+        radek.children[indexHodinyZMinulehoMesice].textContent = z.hodinyMinule;
+            
+        const bunky = radek.querySelectorAll('.bunkaSeSmenami');
+        z.smeny.forEach((smena, i) => { if(bunky[i]) bunky[i].textContent = smena; });
+      });
+    }
+}
 /** funkce načítající data ze zvoleného JSON souboru, pokud žádný není vybrán nic neudělá. navolí správný rok, vygeneruje nanovo tabulku a dosadí data
  * 
  */
@@ -60,30 +94,14 @@ async function importovatZeSouboru() {
   const data = await window.Bridge.nacistData();
   if (!data) return;
 
-  selectRok.value = data.rok;
-  selectMesic.value = data.mesic;
   
-  renderKalendar(parseInt(data.rok), parseInt(data.mesic));
-
-  document.querySelectorAll('.datovyRadek').forEach(el => el.remove());
-
-  data.zamestnanci.forEach(z => {
-    pridaniRadku();
-    const posledniRadek = document.querySelector('tbody tr:last-child');
-    
-    posledniRadek.children[indexUvazek].textContent = z.uvazek;
-    posledniRadek.children[indexJmeno].textContent = z.jmeno;
-    posledniRadek.children[indexHodinyZMinulehoMesice].textContent = z.hodinyMinule;
-    
-    const bunkySmen = posledniRadek.querySelectorAll('.bunkaSeSmenami');
-    z.smeny.forEach((smena, i) => {
-      if (bunkySmen[i]) bunkySmen[i].textContent = smena;
-    });
+  Object.keys(data).forEach(klic => {
+    window.localStorage.setItem(klic, JSON.stringify(data[klic]));
   });
-  
-  document.querySelectorAll('.datovyRadek').forEach(row => {
-    row.children[pocetDniVMesici + indexSloupceZacatkuKalendare].textContent = spoctiHodiny(row);
-  });
+
+  nactiDataZCache();
+  aktualizujKalendar();
+  alert("Data byla načtena do paměti.");
 } 
 
 /**funkce k vykreslení hlavičky kalendáře (první 4 řádky)
@@ -126,13 +144,22 @@ function renderKalendar(rok, mesic) {
   }
   synchronizujRadky(celkovaSirka);
   oznacVikendyASvatky();
+
+  tedDatum = {
+    mesic: selectMesic.value,
+    rok: selectRok.value}
+  window.sessionStorage.setItem(`ted-datum`, JSON.stringify(tedDatum))
 }
 
 //funkce k znovunačtení tabulky podle výběru v roletkách
 function aktualizujKalendar() {
+  ulozDataDoCache();
+
   const vybranyMesic = parseInt(selectMesic.value); 
   const vybranyRok = parseInt(selectRok.value);
+
   renderKalendar(vybranyRok, vybranyMesic);
+  nactiDataZCache();
 }
 
 /** přidá classy/atributy bunce
@@ -535,3 +562,4 @@ function odeberRadky(){
 }
 
 renderKalendar(new Date().getFullYear(),new Date().getMonth()+1)
+window.localStorage.clear();
