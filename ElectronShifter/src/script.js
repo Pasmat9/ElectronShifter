@@ -32,6 +32,10 @@ document.getElementById('generatorSmen').addEventListener('click', generujSmeny)
 document.getElementById('uloz').addEventListener('click', ulozDataDoJSON);
 document.getElementById('nacti').addEventListener('click', importovatZeSouboru);
 
+/** funkce která vrátí počet hodin co má zaměstnanec odpracovat v právě zvoleném měsíci
+ * 
+ * @returns počet hodin
+ */
 function definujPocetHodinKOdpracovani (){
   const celyRadek = document.querySelector('.datovyRadek');
   const polePouzeVsednichDnu = celyRadek.querySelectorAll('.bunkaSeSmenami:not(.vikend)');
@@ -39,7 +43,9 @@ function definujPocetHodinKOdpracovani (){
   return hodinKOdpracovani
 }
 
-
+/** funkce ukládající tabulku do localStorage
+ * 
+ */
 function ulozDataDoLocalStorage(){
   let datoveRadky = document.querySelectorAll('.datovyRadek');
   const stareDatum = JSON.parse(window.sessionStorage.getItem('ted-datum'));
@@ -58,7 +64,7 @@ function ulozDataDoLocalStorage(){
     window.localStorage.setItem(`smeny-${dataKulozeni.rok}-${dataKulozeni.mesic}`, JSON.stringify(dataKulozeni))
 }
 
-/** funkce k uložení aktuálního měsíce do JSON souboru
+/** funkce k uložení obsahu localStorage do JSON souboru
  *  
  */
 function ulozDataDoJSON(){
@@ -76,29 +82,17 @@ function ulozDataDoJSON(){
     window.Bridge.ulozData(dataKulozeni);
 }
 
+/**
+ *  funkce k načtení dat z localStorage
+ */
 function nactiDataZLocalStorage (){
   const cache = window.localStorage.getItem(`smeny-${selectRok.value}-${selectMesic.value}`);
-
   let cacheMinulyMesic;
   if (selectMesic.value === 1) {
     cacheMinulyMesic = window.localStorage.getItem(`smeny-${selectRok.value-1}-12`);
   } else {cacheMinulyMesic = window.localStorage.getItem(`smeny-${selectRok.value}-${selectMesic.value-1}`)};
 
-  const dataMinulyMesic = JSON.parse(cacheMinulyMesic);
-  let hodinyZMinula = 0;
-  const tenhleMesicLidi = Array.from(document.querySelectorAll('.datovyRadek'));
-    tenhleMesicLidi.forEach(z =>{
-        if (cacheMinulyMesic) {
-          const jmeno = z.children[indexJmeno].textContent;
-          const dataMinulyMesic = JSON.parse(cacheMinulyMesic);
-          const clovekMinulyMesic = dataMinulyMesic.zamestnanci.find(staryZamestnanec => staryZamestnanec.jmeno === jmeno);        
-          if (clovekMinulyMesic) {
-          hodinyZMinula = clovekMinulyMesic.hodinyPrevod; 
-        }}
-        z.children[indexHodinyZMinulehoMesice].textContent = hodinyZMinula;
-      })
-
-    if (cache) {
+  if (cache) {
       const data = JSON.parse(cache);
       console.log("Načtená data z cache:", data);
       document.querySelectorAll('.datovyRadek').forEach(el => el.remove()); // Vyčistit       
@@ -107,13 +101,28 @@ function nactiDataZLocalStorage (){
         const radek = document.querySelector('.datovyRadek:last-child');
         radek.children[indexUvazek].textContent = z.uvazek;
         radek.children[indexJmeno].textContent = z.jmeno;
-
+        radek.children[indexHodinyZMinulehoMesice].textContent = z.hodinyMinule
         const bunky = radek.querySelectorAll('.bunkaSeSmenami');
         z.smeny.forEach((smena, i) => { if(bunky[i]) bunky[i].textContent = smena; });
         spoctiHodiny(radek);
+        radek.querySelector('.prevodHodinDal').textContent = z.hodinyPrevod;
       });
+    } else if (cacheMinulyMesic){
+        const dataMinulyMesic = JSON.parse(cacheMinulyMesic);
+        let hodinyZMinula = 0;
+        const tenhleMesicLidi = Array.from(document.querySelectorAll('.datovyRadek'));
+        tenhleMesicLidi.forEach(z =>{
+          if (cacheMinulyMesic) {
+            const jmeno = z.children[indexJmeno].textContent;
+            const dataMinulyMesic = JSON.parse(cacheMinulyMesic);
+            const clovekMinulyMesic = dataMinulyMesic.zamestnanci.find(staryZamestnanec => staryZamestnanec.jmeno === jmeno);        
+            if (clovekMinulyMesic) {
+              hodinyZMinula = clovekMinulyMesic.hodinyPrevod; 
+          }}
+          z.children[indexHodinyZMinulehoMesice].textContent = hodinyZMinula;
+        })}
     }
-}
+
 /** funkce načítající data ze zvoleného JSON souboru, pokud žádný není vybrán nic neudělá. navolí správný rok, vygeneruje nanovo tabulku a dosadí data
  * 
  */
@@ -386,6 +395,11 @@ function spoctiHodiny(radek) {
       return radek.children[pocetDniVMesici+indexSloupceZacatkuKalendare].textContent = hodiny;
 }
 
+/**
+ *  funkce co spočítá bilanci hodin pracovníka za tento měsíc (odpracovano+hodiny z minulýho měsíce - pocet hodin k odpracování)
+ * @param {radek se zamestnancem} radek 
+ * @returns bilance hodin za tento měsíc
+ */
 function spoctiZbyleHodiny(radek){
   const hodinCelkem = spoctiHodiny(radek);
   const nutnoOdpracovat = definujPocetHodinKOdpracovani();
