@@ -31,6 +31,36 @@ document.getElementById('ubírač').addEventListener('click', odeberRadky)
 document.getElementById('generatorSmen').addEventListener('click', generujSmeny); //tlačítko pro generování směn
 document.getElementById('uloz').addEventListener('click', ulozDataDoJSON);
 document.getElementById('nacti').addEventListener('click', importovatZeSouboru);
+document.getElementById('tisk').addEventListener('click', () => {window.Bridge.tiskNahledPDF('vytvorNahledPDF');});
+const tlacitkoMenu = document.querySelector('.tlacitkoMenu');
+const obsahRoletky = document.querySelector('.roletkaObsah');
+
+//  zobrazení menu roletky
+tlacitkoMenu.addEventListener('click', (e) => {
+  e.stopPropagation();
+  obsahRoletky.classList.toggle('zobrazit');
+});
+
+// zavření menu roletky, při klikne kamkoli mimo ni
+document.addEventListener('click', (e) => {
+  if (!obsahRoletky.contains(e.target) && e.target !== tlacitkoMenu) {
+    obsahRoletky.classList.remove('zobrazit');
+  }
+});
+
+// zvýrazňování řádku při nakliknutí
+document.querySelector('table').addEventListener('focusin', (e) => {
+  const radek = e.target.closest('.datovyRadek');
+  if (radek) {
+    radek.classList.add('aktivni-radek');
+  }
+});
+document.querySelector('table').addEventListener('focusout', (e) => {
+  const radek = e.target.closest('.datovyRadek');
+  if (radek) {
+    radek.classList.remove('aktivni-radek');
+  }
+});
 
 /** funkce která vrátí počet hodin co má zaměstnanec odpracovat v právě zvoleném měsíci
  * 
@@ -80,6 +110,7 @@ function ulozDataDoJSON(){
 
     //Bridge je objekt s funkcí v preLoadu, posílá data z render do main scriptu
     window.Bridge.ulozData(dataKulozeni);
+    alert("Uloženo.")
 }
 
 /**
@@ -94,8 +125,7 @@ function nactiDataZLocalStorage (){
 
   if (cache) {
       const data = JSON.parse(cache);
-      console.log("Načtená data z cache:", data);
-      document.querySelectorAll('.datovyRadek').forEach(el => el.remove()); // Vyčistit       
+      document.querySelectorAll('.datovyRadek').forEach(el => el.remove());    
       data.zamestnanci.forEach(z => {
         pridaniRadku();
         const radek = document.querySelector('.datovyRadek:last-child');
@@ -158,7 +188,9 @@ function renderKalendar(rok, mesic) {
   
   for (let prazdneBunkyPredKalendarem = 0; prazdneBunkyPredKalendarem< indexSloupceZacatkuKalendare; prazdneBunkyPredKalendarem++){
     denVTabulce.appendChild(pridejBunku());
+    pridelClassuPodleSloupce(denVTabulce.lastChild, prazdneBunkyPredKalendarem);
     dnyVTydnuTabulce.appendChild(pridejBunku());
+    pridelClassuPodleSloupce(dnyVTydnuTabulce.lastChild, prazdneBunkyPredKalendarem);
   }
 
   for (let cislaKalendarnichDnu = 1;cislaKalendarnichDnu<=pocetDniVMesici; cislaKalendarnichDnu++){
@@ -182,8 +214,11 @@ function renderKalendar(rok, mesic) {
       dnyVTydnuTabulce.appendChild(bunka);
     } else {dnyVTydnuTabulce.appendChild(pridejBunku())};
   }
+
   synchronizujRadky(celkovaSirka);
   oznacVikendyASvatky();
+  Array.from(denVTabulce.children).forEach((bunka, index) => {pridelClassuPodleSloupce(bunka, index)})
+  Array.from(dnyVTydnuTabulce.children).forEach((bunka, index) => {pridelClassuPodleSloupce(bunka, index)})
 
   tedDatum = {
     mesic: selectMesic.value,
@@ -207,26 +242,28 @@ function aktualizujKalendar() {
  * @param {cislo} indexBunky
  */
 function pridelClassuPodleSloupce(bunka,indexBunky){
-  bunka.className = '';
+  //bunka.classList.remove('svatek')
+  //bunka.classList.remove('vikend')
+
   bunka.contentEditable = true;
   if (indexBunky===indexUvazek){
-    bunka.className = ' uvazek';
+    bunka.classList.add('uvazek');
     bunka.setAttribute('data-col', indexBunky)
   } else if (indexBunky===indexJmeno){
-    bunka.className = ' jmeno';
+    bunka.classList.add('jmeno');
     bunka.setAttribute('data-col', indexBunky)
   } else if (indexBunky===indexHodinyZMinulehoMesice){
-    bunka.className = ' hodinyZMinulehoMesice';
+    bunka.classList.add('hodinyZMinulehoMesice');
     bunka.setAttribute('data-col', indexBunky)
   } else if (indexBunky>=indexSloupceZacatkuKalendare && indexBunky<indexSloupceZacatkuKalendare+pocetDniVMesici){
-    bunka.className = ' bunkaSeSmenami';
+    bunka.classList.add('bunkaSeSmenami');
     bunka.setAttribute('data-col', indexBunky)
   } else if (indexBunky===pocetDniVMesici+indexSloupceZacatkuKalendare){
-    bunka.className = ' hodinyTentoMesic';
+    bunka.classList.add('hodinyTentoMesic');
     bunka.setAttribute('data-col', indexBunky)
     bunka.contentEditable = false;
   } else if (indexBunky===pocetDniVMesici+indexSloupceZacatkuKalendare+1){
-    bunka.className = ' prevodHodinDal'
+    bunka.classList.add('prevodHodinDal');
     bunka.setAttribute('data-col', indexBunky)
   }
 }
@@ -276,6 +313,17 @@ function dejClassuSvatku(indexSloupce){
   });
 }
 
+/** funkce vymaže v celém sloupci dříve přidělené classy "svatek" a "vikend"
+ * 
+ * @param {sloupecDne} indexSloupce 
+ */
+function odeberClassuVikenduASvatku (indexSloupce) {
+  Array.from(document.querySelectorAll('tbody tr')).forEach(row => {
+    const bunka = row.children[indexSloupce];       
+    bunka.classList.remove('svatek');
+    bunka.classList.remove('vikend');
+  });
+}
 /** funkce která přidělí všem buňkám ve sloupci classy "vikend" nebo "svatek" v měsíci
  */
 function oznacVikendyASvatky(){
@@ -288,6 +336,7 @@ function oznacVikendyASvatky(){
   const datumVelikonoc = vypocetVelikonoc(dnesniDatum.rok)
 
   poleDnyVTydnu.forEach((td, colIndex) => {
+    odeberClassuVikenduASvatku(colIndex);
     if (td.textContent==='Ne'||td.textContent==='So'){
       dejClassuVikendu(colIndex);
     }   
@@ -620,3 +669,4 @@ function odeberRadky(){
 
 renderKalendar(new Date().getFullYear(),new Date().getMonth()+1)
 window.localStorage.clear();
+

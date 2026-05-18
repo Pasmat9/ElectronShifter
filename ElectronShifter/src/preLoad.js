@@ -5,5 +5,6 @@ const { contextBridge, ipcMain, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("Bridge", {
     ulozData: (data) => ipcRenderer.send("ulozData", data),
-    nacistData: () => ipcRenderer.invoke("nacistData")
+    nacistData: () => ipcRenderer.invoke("nacistData"),
+    tiskNahledPDF: () => ipcRenderer.send('vytvorNahledPDF')
 });

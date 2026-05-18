@@ -62,3 +62,37 @@ ipcMain.handle('nacistData', async () => {
   }
   return null;
 });
+
+// řeší tisk
+ipcMain.on('vytvorNahledPDF', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const options = { 
+    landscape: true, 
+    printBackground: true,
+    margins: { top: 0, bottom: 0, left: 0, right: 0 }
+  };
+
+  win.webContents.printToPDF(options).then(data => {
+    const pdfPath = path.join(__dirname, 'temp_nahled.pdf');
+    fs.writeFile(pdfPath, data, (error) => {
+      if (error) {
+        console.error('Chyba při zápisu PDF náhledu:', error);
+        return;
+      }
+      
+      const previewWin = new BrowserWindow({ 
+        width: 1000, 
+        height: 700,
+        title: 'Náhled před tiskem',
+        autoHideMenuBar: true
+      });
+      
+      previewWin.loadURL(`file://${pdfPath}`);
+      previewWin.on('closed', () => {
+        fs.unlink(pdfPath, (err) => { if (err) console.error(err); });
+      });
+    });
+  }).catch(error => {
+    console.error('Generování PDF selhalo:', error);
+  });
+});
